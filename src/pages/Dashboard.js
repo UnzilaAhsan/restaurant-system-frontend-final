@@ -61,47 +61,158 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { error } = useToast();
+  const { error, info } = useToast();
+
+  // Get API URL from environment or use Render URL
+  const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-6.onrender.com';
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       
-      const tablesRes = await axios.get('/api/tables');
+      // Fetch tables data
+      const tablesRes = await axios.get(`${API_URL}/api/tables`);
       const totalTables = tablesRes.data.data?.length || 0;
       const availableTables = tablesRes.data.data?.filter(t => t.status === 'available').length || 0;
       
+      // Get today's date for reservations
       const today = new Date().toISOString().split('T')[0];
       let reservationsRes;
       
-      if (user.role === 'customer') {
-        reservationsRes = await axios.get(`/api/reservations/user/${user.email}`);
-      } else {
-        reservationsRes = await axios.get('/api/reservations', { params: { date: today } });
+      try {
+        if (user?.role === 'customer') {
+          // For customers, get their reservations
+          reservationsRes = await axios.get(`${API_URL}/api/reservations/user/${user.email}`);
+        } else {
+          // For admin/staff, get today's reservations
+          reservationsRes = await axios.get(`${API_URL}/api/reservations`, { 
+            params: { 
+              date: today,
+              limit: 10 
+            } 
+          });
+        }
+        
+        const todayReservations = reservationsRes.data.data?.length || 0;
+        const occupancyRate = totalTables > 0 ? 
+          Math.round(((totalTables - availableTables) / totalTables) * 100) : 0;
+        
+        // Get recent reservations (limit to 5 for display)
+        const recentReservations = (reservationsRes.data.data || []).slice(0, 5);
+        
+        setStats({
+          totalTables,
+          availableTables,
+          todayReservations,
+          occupancyRate,
+          revenue: 3245, // Demo value
+          averageTime: '45 mins', // Demo value
+          recentReservations
+        });
+        
+      } catch (reservationError) {
+        console.error('Error fetching reservations:', reservationError);
+        // Use demo data for reservations
+        const demoReservations = generateDemoReservations();
+        setStats(prev => ({
+          ...prev,
+          todayReservations: demoReservations.length,
+          recentReservations: demoReservations
+        }));
+        info('Using demo reservations data');
       }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      error('Failed to load dashboard data. Using demo data.');
       
-      const todayReservations = reservationsRes.data.data?.length || 0;
-      const occupancyRate = totalTables > 0 ? 
-        Math.round(((totalTables - availableTables) / totalTables) * 100) : 0;
-      
-      const recentReservations = (reservationsRes.data.data || []).slice(0, 5);
-      
+      // Use complete demo data
+      const demoReservations = generateDemoReservations();
       setStats({
-        totalTables,
-        availableTables,
-        todayReservations,
-        occupancyRate,
+        totalTables: 15,
+        availableTables: 8,
+        todayReservations: demoReservations.length,
+        occupancyRate: 47,
         revenue: 3245,
         averageTime: '45 mins',
-        recentReservations
+        recentReservations: demoReservations
       });
-    } catch (err) {
-      error('Failed to load dashboard data');
-      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  }, [user, error]);
+  }, [user, error, info, API_URL]);
+
+  const generateDemoReservations = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const reservations = [
+      {
+        _id: '1',
+        customerName: user?.role === 'customer' ? user.username : 'John Doe',
+        customerEmail: user?.role === 'customer' ? user.email : 'john@example.com',
+        customerPhone: '123-456-7890',
+        tableNumber: 'T01',
+        reservationDate: today,
+        reservationTime: '18:00',
+        partySize: 2,
+        status: 'confirmed',
+        specialRequests: 'Window seat preferred'
+      },
+      {
+        _id: '2',
+        customerName: 'Jane Smith',
+        customerEmail: 'jane@example.com',
+        customerPhone: '987-654-3210',
+        tableNumber: 'T02',
+        reservationDate: today,
+        reservationTime: '19:30',
+        partySize: 4,
+        status: 'pending',
+        specialRequests: 'Birthday celebration'
+      },
+      {
+        _id: '3',
+        customerName: 'Bob Wilson',
+        customerEmail: 'bob@example.com',
+        customerPhone: '555-123-4567',
+        tableNumber: 'T03',
+        reservationDate: today,
+        reservationTime: '20:00',
+        partySize: 6,
+        status: 'seated',
+        specialRequests: ''
+      },
+      {
+        _id: '4',
+        customerName: 'Alice Johnson',
+        customerEmail: 'alice@example.com',
+        customerPhone: '555-987-6543',
+        tableNumber: 'T04',
+        reservationDate: today,
+        reservationTime: '19:00',
+        partySize: 2,
+        status: 'confirmed',
+        specialRequests: 'Anniversary dinner'
+      },
+      {
+        _id: '5',
+        customerName: 'Charlie Brown',
+        customerEmail: 'charlie@example.com',
+        customerPhone: '555-444-3333',
+        tableNumber: 'T05',
+        reservationDate: today,
+        reservationTime: '17:30',
+        partySize: 8,
+        status: 'completed',
+        specialRequests: 'Business meeting'
+      }
+    ];
+    
+    // Filter for customer view
+    if (user?.role === 'customer') {
+      return reservations.filter(r => r.customerEmail === user.email);
+    }
+    
+    return reservations;
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -841,7 +952,7 @@ const Dashboard = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Box>
             <Typography variant="h2" sx={{ fontWeight: 900, mb: 1, fontSize: '3rem' }} className="gradient-text">
-              Welcome, {user?.username}! 👋
+              Welcome, {user?.username || 'Guest'}! 👋
             </Typography>
             <Typography variant="h6" color="textSecondary" sx={{ maxWidth: '600px' }}>
               View your reservations, book new tables, and manage your dining experience
@@ -1128,9 +1239,9 @@ const Dashboard = () => {
 
   return (
     <Box className="fade-in">
-      {user.role === 'admin' && <AdminDashboard />}
-      {user.role === 'staff' && <StaffDashboard />}
-      {user.role === 'customer' && <CustomerDashboard />}
+      {user?.role === 'admin' && <AdminDashboard />}
+      {user?.role === 'staff' && <StaffDashboard />}
+      {user?.role === 'customer' && <CustomerDashboard />}
     </Box>
   );
 };

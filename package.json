@@ -21,7 +21,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "proxy": "https://restaurant-system-nce0.onrender.com",
+  "proxy": "https://restaurant-system-6.onrender.com",
   "eslintConfig": {
     "extends": [
       "react-app"

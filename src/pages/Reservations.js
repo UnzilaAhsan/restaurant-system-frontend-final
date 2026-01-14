@@ -56,7 +56,7 @@ const Reservations = () => {
   const navigate = useNavigate();
   
   // Get API URL from environment or use Render URL
-  const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-nce0.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-6.onrender.com';
 
   const fetchReservations = async () => {
     try {

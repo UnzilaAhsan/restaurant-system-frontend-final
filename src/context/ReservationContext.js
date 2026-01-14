@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext } from 'react';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-nce0.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-6.onrender.com';
 
 const ReservationContext = createContext();
 
