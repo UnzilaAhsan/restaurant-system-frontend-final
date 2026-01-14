@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import './App.css';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 
 // Components
 import Layout from './components/Layout';
@@ -325,6 +326,7 @@ const theme = createTheme({
     },
   },
 });
+
 
 function App() {
   return (

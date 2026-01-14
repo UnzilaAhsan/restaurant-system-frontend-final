@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use environment variable with fallback
-const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-nce0.onrender.com.com';
+// Fixed: Removed extra .com from fallback URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://restaurant-system-nce0.onrender.com';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -26,20 +26,29 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Enhanced response interceptor for better error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error);
     
-    // Handle network errors
-    if (error.code === 'ERR_NETWORK') {
-      console.log('Network error - backend might be down');
+    if (!error.response) {
+      // Network error
+      console.error('Network Error: Unable to connect to backend');
+      return Promise.reject(new Error('Unable to connect to server. Please check your connection.'));
     }
     
-    // Handle timeout
-    if (error.code === 'ECONNABORTED') {
-      console.log('Request timeout');
+    // Handle specific HTTP status codes
+    const { status } = error.response;
+    
+    if (status === 401) {
+      console.log('Unauthorized - redirecting to login');
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    } else if (status === 404) {
+      console.error('Endpoint not found:', error.config.url);
+    } else if (status === 500) {
+      console.error('Server error');
     }
     
     return Promise.reject(error);
